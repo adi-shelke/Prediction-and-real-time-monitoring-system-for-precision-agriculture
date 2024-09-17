@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import joblib
 import pandas as pd
+import numpy as np
 
 app = Flask(__name__)
 
@@ -25,20 +26,32 @@ def predict():
             'rainfall': [data['rainfall']]
         })
         
+        # Get probabilities for each crop
+        probabilities = xgboost_model.predict_proba(input_data)
         
-        # Make prediction
-        predicted_label = xgboost_model.predict(input_data)
-        predicted_crop = label_encoder.inverse_transform(predicted_label)
+        # Get top 3 crops and their probabilities
+        top_n = 3
+        top_n_indices = np.argsort(probabilities, axis=1)[:, -top_n:][:, ::-1]  # Sort and get indices of top 3 crops
+        top_n_probs = np.take_along_axis(probabilities, top_n_indices, axis=1)  # Get probabilities of top 3 crops
         
-        # Return the prediction as a JSON response
-        return jsonify({'recommended_crop': predicted_crop[0]})
+        # Decode the crop labels to their original string values
+        top_n_crops = label_encoder.inverse_transform(top_n_indices[0])
+        
+        # Prepare the result with crop names and suitability percentages
+        recommendations = [
+            {'crop': crop, 'suitability': round(prob * 100, 2)} 
+            for crop, prob in zip(top_n_crops, top_n_probs[0])
+        ]
+        
+        # Return the top 3 recommendations as a JSON response
+        return jsonify({'recommendations': recommendations})
     
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-@app.route('/test', methods=['POST','GET'])
+@app.route('/test', methods=['POST', 'GET'])
 def test():
-    return jsonify({"message":"success"})
+    return jsonify({"message": "success"})
 
 
 if __name__ == '__main__':
