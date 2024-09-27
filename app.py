@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify
 import joblib
 import pandas as pd
 import numpy as np
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the XGBoost model and label encoder
 xgboost_model = joblib.load('xgboost_model.pkl')

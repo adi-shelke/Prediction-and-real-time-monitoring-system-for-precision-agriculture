@@ -1,6 +1,6 @@
 import requests
 
-url = 'http://localhost:5000/predict'
+url = 'https://prediction-and-real-time-monitoring.onrender.com/predict'
 data = {
     "N": 77,
     "P": 57,
